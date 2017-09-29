@@ -1,0 +1,575 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Sep  7 15:22:12 2017
+
+@author: jeevan.kumar
+"""
+
+
+from keras.models import Sequential
+from keras.layers import Dense
+import numpy
+# fix random seed for reproducibility
+numpy.random.seed(7)
+
+from keras.models import Sequential
+from keras.layers import Dense
+import numpy
+# fix random seed for reproducibility
+numpy.random.seed(7)
+
+import os
+
+os.chdir("E:\Data Science\Python")
+
+# load pima indians dataset
+dataset = numpy.loadtxt("pima-indians-diabetes.data.csv", delimiter=",")
+# split into input (X) and output (Y) variables
+X = dataset[:,0:8]
+Y = dataset[:,8]
+
+
+# create model
+model = Sequential()
+model.add(Dense(12, input_dim=8, activation='relu'))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
+
+# Compile model
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Fit the model
+model.fit(X, Y, epochs=150, batch_size=10)
+
+# Fit the model
+model.fit(X, Y, epochs=150, batch_size=10)
+
+# evaluate the model
+scores = model.evaluate(X, Y)
+print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+
+
+# calculate predictions
+predictions = model.predict(X)
+# round predictions
+rounded = [round(x[0]) for x in predictions]
+print(rounded)
+
+====================================================================================
+Keras for Multiclass
+====================================================================================
+
+import numpy
+import pandas
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.wrappers.scikit_learn import KerasClassifier
+from keras.utils import np_utils
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import Pipeline
+
+
+
+
+# fix random seed for reproducibility
+seed = 7
+numpy.random.seed(seed)
+
+
+
+# load dataset
+dataframe = pandas.read_csv("iris.csv", header=None)
+dataset = dataframe.values
+X = dataset[:,0:4].astype(float)
+Y = dataset[:,4]
+
+# load dataset
+dataframe = pandas.read_csv("iris.csv", header=None)
+dataset = dataframe.values
+X = dataset[:,0:4].astype(float)
+Y = dataset[:,4]
+
+
+# encode class values as integers
+encoder = LabelEncoder()
+encoder.fit(Y)
+encoded_Y = encoder.transform(Y)
+# convert integers to dummy variables (i.e. one hot encoded)
+dummy_y = np_utils.to_categorical(encoded_Y)
+
+
+
+
+# define baseline model
+def baseline_model():
+	# create model
+	model = Sequential()
+	model.add(Dense(8, input_dim=4, activation='relu'))
+	model.add(Dense(3, activation='softmax'))
+	# Compile model
+	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	return model
+
+estimator = KerasClassifier(build_fn=baseline_model, epochs=200, batch_size=5, verbose=0)
+
+kfold = KFold(n_splits=10, shuffle=True, random_state=seed)
+
+results = cross_val_score(estimator, X, dummy_y, cv=kfold)
+print("Baseline: %.2f%% (%.2f%%)" % (results.mean()*100, results.std()*100))
+
+
+===========================================================================================
+Image classification using keras
+===========================================================================================
+
+# Plot ad hoc CIFAR10 instances
+from keras.datasets import cifar10
+from matplotlib import pyplot
+import scipy.toimage
+# load data
+(X_train, y_train), (X_test, y_test) = cifar10.load_data()
+# create a grid of 3x3 images
+for i in range(0, 9):
+	pyplot.subplot(330 + 1 + i)
+	pyplot.imshow((X_train[i]))
+# show the plot
+pyplot.show()
+
+
+
+
+# Simple CNN model for CIFAR-10
+import numpy
+from keras.datasets import cifar10
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import Flatten
+from keras.constraints import maxnorm
+from keras.optimizers import SGD
+from keras.layers.convolutional import Conv2D
+from keras.layers.convolutional import MaxPooling2D
+from keras.utils import np_utils
+from keras import backend as K
+K.set_image_dim_ordering('th')
+
+
+
+# fix random seed for reproducibility
+seed = 7
+numpy.random.seed(seed)
+
+# load data
+(X_train, y_train), (X_test, y_test) = cifar10.load_data()
+
+
+
+# normalize inputs from 0-255 to 0.0-1.0
+X_train = X_train.astype('float32')
+X_test = X_test.astype('float32')
+X_train = X_train / 255.0
+X_test = X_test / 255.0
+
+
+
+# one hot encode outputs
+y_train = np_utils.to_categorical(y_train)
+y_test = np_utils.to_categorical(y_test)
+num_classes = y_test.shape[1]
+
+
+
+
+# Create the model
+model = Sequential()
+model.add(Conv2D(32, (3, 3), input_shape=(3, 32, 32), padding='same', activation='relu', kernel_constraint=maxnorm(3)))
+model.add(Dropout(0.2))
+model.add(Conv2D(32, (3, 3), activation='relu', padding='same', kernel_constraint=maxnorm(3)))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Flatten())
+model.add(Dense(512, activation='relu', kernel_constraint=maxnorm(3)))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+# Compile model
+epochs = 25
+lrate = 0.01
+decay = lrate/epochs
+sgd = SGD(lr=lrate, momentum=0.9, decay=decay, nesterov=False)
+model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+print(model.summary())
+
+
+# Fit the model
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=epochs, batch_size=32)
+# Final evaluation of the model
+scores = model.evaluate(X_test, y_test, verbose=0)
+print("Accuracy: %.2f%%" % (scores[1]*100))
+
+
+====================================================================================================================
+====================================================================================================
+# Train pre-trained keras models
+===========================================================================================
+from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
+
+from keras.applications import imagenet_utils
+
+datagen = ImageDataGenerator(
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest')
+
+img = load_img('E:/Data Science/Python/train/cats/cat.0.jpg')  # this is a PIL image
+x = img_to_array(img)  # this is a Numpy array with shape (3, 150, 150)
+x = x.reshape((1,) + x.shape)  # this is a Numpy array with shape (1, 3, 150, 150)
+
+# the .flow() command below generates batches of randomly transformed images
+# and saves the results to the `preview/` directory
+i = 0
+for batch in datagen.flow(x, batch_size=1,
+                          save_to_dir='E:/Data Science/Python/train/preview', save_prefix='cat', save_format='jpeg'):
+    i += 1
+    if i > 20:
+        break  # otherwise the generator would loop indefinitely
+        
+# Now build the first model with just 3 convolution layers with relu activation and followed by max pooling layers. 
+
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Activation, Dropout, Flatten, Dense
+
+model = Sequential()
+model.add(Conv2D(32, (3, 3), input_shape=(150, 150,3)))
+model.add(Activation('relu'))
+#model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(MaxPooling2D(pool_size=(2, 2),dim_ordering="tf"))  
+
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+# the model so far outputs 3D feature maps (height, width, features)        
+
+#On top of it stick two fully connected layers. model with a single unit and a sigmoid activation, which is perfect for a binary classification. To go with it we will also use the binary_crossentropy loss to train our model.        
+        
+model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+model.add(Dense(64))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+model.add(Dense(1))
+model.add(Activation('sigmoid'))
+
+model.compile(loss='binary_crossentropy',
+              optimizer='rmsprop',
+              metrics=['accuracy'])
+
+#prepare our data. We will use .flow_from_directory() to generate batches of image data (and their labels) directly from our jpgs in their respective folders
+
+batch_size = 16
+
+# this is the augmentation configuration we will use for training
+train_datagen = ImageDataGenerator(
+        rescale=1./255,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True)
+
+# this is the augmentation configuration we will use for testing:
+# only rescaling
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+# this is a generator that will read pictures found in
+# subfolers of 'data/train', and indefinitely generate
+# batches of augmented image data
+train_generator = train_datagen.flow_from_directory(
+        'E:/Data Science/Python/train',  # this is the target directory
+        target_size=(150, 150),  # all images will be resized to 150x150
+        batch_size=batch_size,
+        class_mode='binary')  # since we use binary_crossentropy loss, we need binary labels
+
+# this is a similar generator, for validation data
+validation_generator = test_datagen.flow_from_directory(
+        'E:/Data Science/Python/validation',
+        target_size=(150, 150),
+        batch_size=batch_size,
+        class_mode='binary')
+
+#use these generators to train our model
+
+import h5py
+import cython
+
+model.fit_generator(
+        train_generator,
+        steps_per_epoch=2000 // batch_size,
+        epochs=1,
+        validation_data=validation_generator,
+        validation_steps=800 // batch_size)
+model.save_weights('first_try.h5')  # always save your weights after training or during training
+
+#Using the bottleneck features of a pre-trained network
+
+#use VGG16 architechture
+
+# we will only instantiate the convolutional part of the model,everything up to the fully-connected layers. 
+#We will then run this model on our training and validation data once, recording the output (the "bottleneck features" from th VGG16 model: 
+#the last activation maps before the fully-connected layers) in two numpy arrays. Then we will train a small fully-connected model on top of the stored features.
+import numpy as np
+
+batch_size = 16
+
+generator = datagen.flow_from_directory(
+        'E:/Data Science/Python/train',
+        target_size=(150, 150),
+        batch_size=batch_size,
+        class_mode=None,  # this means our generator will only yield batches of data, no labels
+        shuffle=False)  # our data will be in order, so all first 1000 images will be cats, then 1000 dogs
+# the predict_generator method returns the output of a model, given
+# a generator that yields batches of numpy data
+bottleneck_features_train = model.predict_generator(generator, 2000)
+# save the output as a Numpy array
+np.save('bottleneck_features_train.npy', bottleneck_features_train)
+
+generator = datagen.flow_from_directory(
+        'E:/Data Science/Python/validation',
+        target_size=(150, 150),
+        batch_size=batch_size,
+        class_mode=None,
+        shuffle=False)
+bottleneck_features_validation = model.predict_generator(generator, 800)
+np.save('bottleneck_features_validation.npy', bottleneck_features_validation)
+
+#We can then load our saved data and train a small fully-connected model:
+
+train_data = np.load('bottleneck_features_train.npy')
+# the features were saved in order, so recreating the labels is easy
+train_labels = np.array([0] * 1000 + [1] * 1000)
+
+validation_data = np.load('bottleneck_features_validation.npy')
+validation_labels = np.array([0] * 400 + [1] * 400)
+
+model = Sequential()
+model.add(Flatten(input_shape=train_data.shape[1:]))
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(1, activation='sigmoid'))
+
+model.compile(optimizer='rmsprop',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+model.fit(train_data, train_labels,
+          epochs=50,
+          batch_size=batch_size,
+          validation_data=(validation_data, validation_labels))
+model.save_weights('bottleneck_fc_model.h5')
+
+
+=========================================================================================================
+#Use the pre-trained models to identify classify images
+=========================================================================================================
+!pip install pillow
+
+import os
+import numpy as np
+from keras.models import Sequential
+from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import Convolution2D, MaxPooling2D, ZeroPadding2D
+from keras import optimizers
+from keras import applications
+from keras.models import Model
+from IPython.display import Image
+from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
+
+model_vgg = applications.VGG16(include_top=False, weights='imagenet')
+
+
+# dimensions of our images.
+img_width, img_height = 150, 150
+
+train_data_dir = 'E:/Data Science/Python/train'
+validation_data_dir = 'E:/Data Science/Python/validation'
+datagen = ImageDataGenerator(rescale=1./255)
+batch_size = 32
+
+'''
+# automagically retrieve images and their classes for train and validation sets
+train_generator = datagen.flow_from_directory(
+        train_data_dir,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary')
+
+validation_generator = datagen.flow_from_directory(
+        validation_data_dir,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='binary')
+'''
+train_generator_bottleneck = datagen.flow_from_directory(
+        train_data_dir,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode=None,
+        shuffle=False)
+
+validation_generator_bottleneck = datagen.flow_from_directory(
+        validation_data_dir,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode=None,
+        shuffle=False)
+
+train_samples = 1984
+validation_samples = 800
+epochs=30
+
+#As it takes time to run,  we save the output of the VGG16.
+
+
+bottleneck_features_train = model_vgg.predict_generator(train_generator_bottleneck, train_samples // batch_size)
+np.save(open('E:/Data Science/Python/models/bottleneck_features_train.npy', 'wb'), bottleneck_features_train)
+
+bottleneck_features_validation = model_vgg.predict_generator(validation_generator_bottleneck, validation_samples // batch_size)
+np.save(open('E:/Data Science/Python/models/bottleneck_features_validation.npy', 'wb'), bottleneck_features_validation)
+
+#Load the saved output
+
+train_data = np.load(open('E:/Data Science/Python/models/bottleneck_features_train.npy', 'rb'))
+train_labels = np.array([0] * (train_samples // 2) + [1] * (train_samples // 2))
+
+
+validation_data = np.load(open('E:/Data Science/Python/models/bottleneck_features_validation.npy', 'rb'))
+validation_labels = np.array([0] * (validation_samples // 2) + [1] * (validation_samples // 2))
+
+#define and train the custom fully connected neural network
+
+model_top = Sequential()
+model_top.add(Flatten(input_shape=train_data.shape[1:]))
+model_top.add(Dense(256, activation='relu'))
+model_top.add(Dropout(0.5))
+model_top.add(Dense(1, activation='sigmoid'))
+
+model_top.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
+
+
+model_top.fit(train_data, train_labels,
+        epochs=epochs, 
+        batch_size=batch_size,
+        validation_data=(validation_data, validation_labels))
+
+model_top.save_weights('E:/Data Science/Python/models/bottleneck_30_epochs.h5')
+
+model_top.evaluate(validation_data, validation_labels)
+
+###Fine-tuning the top layers of a a pre-trained network¶
+
+###Start by instantiating the VGG base and loading its weights.
+
+model_vgg = applications.VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
+
+#Build a classifier model to put on top of the convolutional model. For the fine tuning, we start with a fully trained-classifer. We will use the weights from the earlier model. And then we will add this model on top of the convolutional base.
+
+top_model = Sequential()
+top_model.add(Flatten(input_shape=model_vgg.output_shape[1:]))
+top_model.add(Dense(256, activation='relu'))
+top_model.add(Dropout(0.5))
+top_model.add(Dense(1, activation='sigmoid'))
+
+top_model.load_weights('E:/Data Science/Python/models/bottleneck_30_epochs.h5')
+
+#model_vgg.add(top_model)
+model = Model(inputs = model_vgg.input, outputs = top_model(model_vgg.output))
+
+
+#For fine turning, we only want to train a few layers. This line will set the first 25 layers (up to the conv block) to non-trainable.
+
+for layer in model_vgg.layers[:15]:
+    layer.trainable = False
+    
+    # compile the model with a SGD/momentum optimizer
+# and a very slow learning rate.
+model.compile(loss='binary_crossentropy',
+              optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
+              metrics=['accuracy'])
+
+
+# prepare data augmentation configuration  . . . do we need this?
+train_datagen = ImageDataGenerator(
+        rescale=1./255,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True)
+
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+train_generator = train_datagen.flow_from_directory(
+        train_data_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='binary')
+
+validation_generator = test_datagen.flow_from_directory(
+        validation_data_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='binary')
+
+# fine-tune the model
+model.fit_generator(
+    train_generator,
+    steps_per_epoch=train_samples // batch_size,
+    epochs=epochs,
+    validation_data=validation_generator,
+    validation_steps=validation_samples // batch_size)
+
+model.save_weights('E:/Data Science/Python/models/finetuning_30epochs_vgg.h5')
+
+model.load_weights('E:/Data Science/Python/models/finetuning_30epochs_vgg.h5')
+
+
+#Evaluating on validation set
+#Computing loss and accuracy :
+
+model.evaluate_generator(validation_generator, validation_samples)
+
+
+==============================================================================================
+#How do I save and load model
+=============================================================================================
+
+#Now we will save model and weights sepeartely
+from keras.models import model_from_json
+# serialize model to JSON
+model_json = model_vgg.to_json()
+with open("E:/Data Science/Python/models/model_vgg.json", "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+model_vgg.save_weights('E:/Data Science/Python/models/model_vgg_weights.h5')  # always save your weights after training or during training
+print("Saved model to disk")
+
+# load json and create model
+open_the_json_model_file = open('E:/Data Science/Python/models/model_vgg.json', 'r')
+loaded_model_json = open_the_json_model_file.read()
+open_the_json_model_file.close()
+loaded_model = model_from_json(loaded_model_json)
+
+
+# load weights into new model
+loaded_model.load_weights("E:/Data Science/Python/models/model_vgg_weights.h5")
+print("Loaded model from disk")
+
+#After loading we need to compile the model
+loaded_model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
